@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PyExcept — Aprende Excepciones Python</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:        #07080f;
+  --bg2:       #0d0f1c;
+  --bg3:       #12142a;
+  --green:     #39d98a;
+  --green-dim: rgba(57,217,138,0.12);
+  --blue:      #4da6ff;
+  --blue-dim:  rgba(77,166,255,0.12);
+  --orange:    #ff8c42;
+  --orange-dim:rgba(255,140,66,0.12);
+  --red:       #ff4d6a;
+  --red-dim:   rgba(255,77,106,0.12);
+  --yellow:    #ffd166;
+  --yellow-dim:rgba(255,209,102,0.1);
+  --purple:    #c084fc;
+  --purple-dim:rgba(192,132,252,0.1);
+  --border:    rgba(255,255,255,0.07);
+  --text-muted:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:#e2e8f0;font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
+.font-display{font-family:'Syne',sans-serif}
+.font-code{font-family:'JetBrains Mono',monospace}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--green);border-radius:4px}
+
+/* ── Noise grain overlay ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:.4
+}
+
+/* ── Pages ── */
+.page{display:none;animation:fadeIn .35s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Cards ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;transition:.25s}
+.card:hover{border-color:rgba(255,255,255,0.14)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;cursor:pointer;
+  transition:.2s;border:none;outline:none}
+.btn-green{background:var(--green);color:#07080f;padding:14px 32px;font-size:1rem;
+  box-shadow:0 0 24px rgba(57,217,138,.35)}
+.btn-green:hover{box-shadow:0 0 40px rgba(57,217,138,.55);transform:translateY(-1px)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:#e2e8f0;
+  padding:10px 22px;font-size:.875rem}
+.btn-ghost:hover{background:rgba(255,255,255,.05)}
+.btn-sm{padding:8px 18px;font-size:.8rem;border-radius:8px}
+
+/* ── Progress bar ── */
+.prog-track{background:var(--bg3);border-radius:99px;height:10px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(90deg,var(--green),#5affa8)}
+
+/* ── Code block ── */
+.code-block{background:#0a0c1a;border:1px solid rgba(77,166,255,.18);border-radius:12px;
+  padding:20px;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;
+  position:relative;overflow-x:auto}
+.code-block .kw{color:#c084fc}
+.code-block .fn{color:#4da6ff}
+.code-block .st{color:#ffd166}
+.code-block .cm{color:#4b5563}
+.code-block .er{color:#ff4d6a}
+.code-block .ok{color:#39d98a}
+.code-block .num{color:#ff8c42}
+
+/* ── Quiz options ── */
+.opt{background:var(--bg2);border:1.5px solid var(--border);border-radius:12px;
+  padding:14px 18px;cursor:pointer;transition:.2s;font-size:.9rem}
+.opt:hover:not(.disabled){background:rgba(77,166,255,.08);border-color:var(--blue)}
+.opt.correct{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.opt.wrong{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+.opt.disabled{cursor:default}
+
+/* ── Fill blank ── */
+.fill-input{background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;
+  padding:8px 14px;font-family:'JetBrains Mono',monospace;font-size:.88rem;color:#e2e8f0;
+  outline:none;transition:.2s;width:100%}
+.fill-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(77,166,255,.15)}
+.fill-input.correct{border-color:var(--green);background:var(--green-dim)}
+.fill-input.wrong{border-color:var(--red);background:var(--red-dim)}
+
+/* ── Simulator ── */
+.sim-input{background:#060810;border:1px solid rgba(77,166,255,.2);border-radius:12px;
+  padding:16px;font-family:'JetBrains Mono',monospace;font-size:.83rem;color:#c9d1d9;
+  outline:none;resize:vertical;min-height:120px;width:100%;line-height:1.7}
+.sim-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(77,166,255,.1)}
+.sim-output{background:#060810;border:1px solid rgba(57,217,138,.18);border-radius:12px;
+  padding:16px;font-family:'JetBrains Mono',monospace;font-size:.83rem;line-height:1.7;
+  min-height:80px}
+
+/* ── Badge ── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:99px;font-size:.72rem;font-family:'JetBrains Mono',monospace;font-weight:700}
+
+/* ── Level pill ── */
+.lvl-pill{display:flex;align-items:center;gap:10px;padding:12px 18px;
+  border-radius:12px;cursor:pointer;transition:.2s;border:1px solid var(--border)}
+.lvl-pill:hover{background:rgba(255,255,255,.04)}
+.lvl-pill.done{border-color:rgba(57,217,138,.3);background:var(--green-dim)}
+.lvl-pill.active-lv{border-color:var(--blue);background:var(--blue-dim)}
+.lvl-pill.locked{opacity:.4;cursor:not-allowed}
+
+/* ── Achievement ── */
+.ach{padding:14px;border-radius:12px;border:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;transition:.2s}
+.ach.earned{border-color:rgba(255,209,102,.35);background:var(--yellow-dim)}
+
+/* ── XP flash ── */
+.xp-toast{position:fixed;top:80px;right:24px;z-index:10000;
+  background:var(--green);color:#07080f;font-family:'Syne',sans-serif;
+  font-weight:800;font-size:1.1rem;padding:10px 20px;border-radius:10px;
+  box-shadow:0 0 30px rgba(57,217,138,.5);
+  animation:xpAnim .9s forwards}
+@keyframes xpAnim{
+  0%{opacity:0;transform:translateY(10px) scale(.9)}
+  20%{opacity:1;transform:translateY(-4px) scale(1.05)}
+  80%{opacity:1;transform:translateY(-4px)}
+  100%{opacity:0;transform:translateY(-20px)}
+}
+
+/* ── Streak flame ── */
+.flame{display:inline-block;animation:flicker 1.4s ease-in-out infinite alternate}
+@keyframes flicker{
+  from{filter:drop-shadow(0 0 6px #ff8c42)}
+  to{filter:drop-shadow(0 0 14px #ffd166)}
+}
+
+/* ── Nav ── */
+#topnav{background:rgba(7,8,15,.85);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);position:fixed;top:0;left:0;right:0;z-index:500}
+
+/* ── Pulse ── */
+.pulse-dot{width:8px;height:8px;border-radius:50%;
+  animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.4;transform:scale(1.4)}
+}
+
+/* ── Section fade ── */
+.s-fade{opacity:0;transform:translateY(20px);transition:.5s}
+.s-fade.vis{opacity:1;transform:none}
+
+/* ── Tooltip ── */
+.tip{position:relative;cursor:help}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
+  transform:translateX(-50%);background:#1a1d35;color:#e2e8f0;font-size:.75rem;
+  padding:6px 10px;border-radius:8px;white-space:nowrap;border:1px solid var(--border);
+  opacity:0;pointer-events:none;transition:.2s;font-family:'DM Sans',sans-serif}
+.tip:hover::after{opacity:1}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TOP NAV ═══════════════ -->
+<nav id="topnav">
+  <div class="max-w-5xl mx-auto px-5 h-14 flex items-center justify-between">
+    <button onclick="goPage('home')" class="font-display font-800 text-lg flex items-center gap-2" style="color:var(--green);letter-spacing:-.5px">
+      <span style="font-size:1.3rem">🐍</span> PyExcept
+    </button>
+    <div class="flex items-center gap-5">
+      <!-- XP -->
+      <div class="flex items-center gap-1.5 tip" data-tip="Puntos de experiencia">
+        <span style="color:var(--yellow);font-size:1rem">⚡</span>
+        <span id="nav-xp" class="font-code text-sm font-bold" style="color:var(--yellow)">0 XP</span>
+      </div>
+      <!-- Streak -->
+      <div class="flex items-center gap-1 tip" data-tip="Racha de ejercicios">
+        <span class="flame" style="font-size:1.1rem">🔥</span>
+        <span id="nav-streak" class="font-code text-sm font-bold" style="color:var(--orange)">0</span>
+      </div>
+      <!-- Lives -->
+      <div class="flex items-center gap-1 tip" data-tip="Vidas restantes">
+        <span style="font-size:1rem">❤️</span>
+        <span id="nav-lives" class="font-code text-sm font-bold" style="color:var(--red)">5</span>
+      </div>
+      <!-- Dashboard -->
+      <button onclick="goPage('dashboard')" class="btn btn-ghost btn-sm hidden sm:flex">Dashboard</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     PAGE: HOME
+═══════════════════════════════════════ -->
+<div id="page-home" class="page active" style="padding-top:56px">
+  <div class="max-w-5xl mx-auto px-5 py-16">
+
+    <!-- Hero -->
+    <div class="text-center mb-16">
+      <div class="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full"
+           style="background:var(--green-dim);border:1px solid rgba(57,217,138,.25)">
+        <div class="pulse-dot" style="background:var(--green)"></div>
+        <span class="font-code text-xs" style="color:var(--green)">BETA · Plataforma Educativa</span>
+      </div>
+      <h1 class="font-display font-extrabold mb-5"
+          style="font-size:clamp(2.6rem,7vw,4.5rem);line-height:1.05;letter-spacing:-2px">
+        Aprende<br>
+        <span style="color:var(--green);text-shadow:0 0 40px rgba(57,217,138,.4)">Excepciones Python</span><br>
+        como un pro.
+      </h1>
+      <p class="text-gray-400 max-w-xl mx-auto mb-10" style="font-size:1.1rem;line-height:1.7">
+        5 niveles, ejercicios interactivos, simulador de código y gamificación.
+        Aprende a manejar errores en Python de forma práctica y divertida.
+      </p>
+      <div class="flex flex-wrap gap-4 justify-center">
+        <button class="btn btn-green text-lg" onclick="goPage('levels')">
+          🚀 Comenzar ahora
+        </button>
+        <button class="btn btn-ghost" onclick="goPage('simulator')">
+          🔬 Ir al Simulador
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-16">
+      <div class="card p-5 text-center">
+        <div class="font-display text-4xl font-extrabold mb-1" style="color:var(--green)">5</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">NIVELES</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="font-display text-4xl font-extrabold mb-1" style="color:var(--blue)">25+</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">EJERCICIOS</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="font-display text-4xl font-extrabold mb-1" style="color:var(--orange)">10</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">LOGROS</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div class="font-display text-4xl font-extrabold mb-1" style="color:var(--purple)">∞</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">PRÁCTICA</div>
+      </div>
+    </div>
+
+    <!-- Progress preview -->
+    <div class="card p-6 mb-8">
+      <div class="flex justify-between items-center mb-3">
+        <span class="font-display font-bold text-sm">Tu progreso general</span>
+        <span id="home-prog-pct" class="font-code text-xs" style="color:var(--green)">0%</span>
+      </div>
+      <div class="prog-track mb-4">
+        <div id="home-prog-fill" class="prog-fill" style="width:0%"></div>
+      </div>
+      <div class="flex gap-3 flex-wrap">
+        <span class="badge" style="background:var(--green-dim);color:var(--green);border:1px solid rgba(57,217,138,.2)">
+          🏆 Nivel <span id="home-level">1</span>
+        </span>
+        <span id="home-xp-badge" class="badge" style="background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,209,102,.2)">
+          ⚡ 0 XP
+        </span>
+        <span id="home-streak-badge" class="badge" style="background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,140,66,.2)">
+          🔥 Racha: 0
+        </span>
+      </div>
+    </div>
+
+    <!-- Feature cards -->
+    <div class="grid sm:grid-cols-3 gap-4">
+      <div class="card p-6">
+        <div style="font-size:2rem;margin-bottom:12px">📚</div>
+        <h3 class="font-display font-bold mb-2">Teoría Clara</h3>
+        <p class="text-gray-400 text-sm">Explicaciones visuales con ejemplos de código reales y comentados.</p>
+      </div>
+      <div class="card p-6">
+        <div style="font-size:2rem;margin-bottom:12px">🎯</div>
+        <h3 class="font-display font-bold mb-2">Práctica Interactiva</h3>
+        <p class="text-gray-400 text-sm">Opción múltiple, completar código, identificar errores y predecir salidas.</p>
+      </div>
+      <div class="card p-6">
+        <div style="font-size:2rem;margin-bottom:12px">🔬</div>
+        <h3 class="font-display font-bold mb-2">Simulador</h3>
+        <p class="text-gray-400 text-sm">Escribe código Python y observa cómo se manejan las excepciones.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE: LEVELS MAP
+═══════════════════════════════════════ -->
+<div id="page-levels" class="page" style="padding-top:56px">
+  <div class="max-w-2xl mx-auto px-5 py-12">
+    <div class="mb-10">
+      <div class="font-code text-xs mb-2" style="color:var(--text-muted)">// Ruta de aprendizaje</div>
+      <h2 class="font-display font-extrabold text-3xl mb-1">Elige tu nivel</h2>
+      <p class="text-gray-400 text-sm">Completa cada nivel en orden para desbloquear el siguiente.</p>
+    </div>
+
+    <div class="space-y-3" id="levels-list"></div>
+
+    <div class="mt-8 card p-5">
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-display font-bold text-sm">Progreso total</span>
+        <span id="lvl-prog-pct" class="font-code text-xs" style="color:var(--green)">0%</span>
+      </div>
+      <div class="prog-track">
+        <div id="lvl-prog-fill" class="prog-fill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE: LESSON
+═══════════════════════════════════════ -->
+<div id="page-lesson" class="page" style="padding-top:56px">
+  <div class="max-w-2xl mx-auto px-5 py-10">
+    <!-- Lesson header -->
+    <div class="flex items-center gap-4 mb-6">
+      <button onclick="goPage('levels')" class="btn btn-ghost btn-sm">← Volver</button>
+      <div class="flex-1 prog-track">
+        <div id="lesson-prog" class="prog-fill" style="width:0%"></div>
+      </div>
+      <span id="lesson-step-label" class="font-code text-xs" style="color:var(--text-muted)">1/4</span>
+    </div>
+
+    <!-- Theory card -->
+    <div id="theory-card" class="card p-7 mb-6">
+      <div id="theory-badge" class="badge mb-4" style="background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)">📖 TEORÍA</div>
+      <h3 id="theory-title" class="font-display font-extrabold text-2xl mb-3"></h3>
+      <div id="theory-body" class="text-gray-300 text-sm leading-relaxed mb-5"></div>
+      <div id="theory-code" class="code-block mb-5 hidden"></div>
+      <button class="btn btn-green w-full" onclick="nextStep()">Continuar →</button>
+    </div>
+
+    <!-- Exercise card -->
+    <div id="exercise-card" class="card p-7 mb-6 hidden">
+      <div id="ex-badge" class="badge mb-4"></div>
+      <h3 id="ex-question" class="font-display font-bold text-xl mb-5"></h3>
+      <div id="ex-code-preview" class="code-block mb-5 hidden"></div>
+      <div id="ex-body"></div>
+      <div id="ex-feedback" class="hidden mt-5 p-4 rounded-xl font-code text-sm"></div>
+      <button id="ex-next-btn" class="btn btn-green w-full mt-5 hidden" onclick="nextStep()">Siguiente →</button>
+    </div>
+
+    <!-- Completion card -->
+    <div id="complete-card" class="hidden text-center">
+      <div style="font-size:4rem;margin-bottom:16px">🎉</div>
+      <h2 class="font-display font-extrabold text-3xl mb-3" style="color:var(--green)">¡Nivel completado!</h2>
+      <p id="complete-msg" class="text-gray-400 mb-8"></p>
+      <div id="complete-xp" class="text-5xl font-display font-extrabold mb-8" style="color:var(--yellow)"></div>
+      <div class="flex gap-3 justify-center flex-wrap">
+        <button class="btn btn-green" onclick="goPage('levels')">Ver todos los niveles</button>
+        <button id="next-level-btn" class="btn btn-ghost" onclick="nextLevel()">Siguiente nivel →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE: SIMULATOR
+═══════════════════════════════════════ -->
+<div id="page-simulator" class="page" style="padding-top:56px">
+  <div class="max-w-3xl mx-auto px-5 py-12">
+    <div class="mb-8">
+      <div class="font-code text-xs mb-2" style="color:var(--text-muted)">// Laboratorio de excepciones</div>
+      <h2 class="font-display font-extrabold text-3xl mb-2">Simulador de Código</h2>
+      <p class="text-gray-400 text-sm">Escribe código Python y observa cómo se detectan y manejan las excepciones.</p>
+    </div>
+
+    <!-- Quick templates -->
+    <div class="flex gap-2 flex-wrap mb-4">
+      <span class="font-code text-xs" style="color:var(--text-muted)">Plantillas:</span>
+      <button class="badge cursor-pointer hover:opacity-80 transition"
+        style="background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)"
+        onclick="loadTemplate('try_except')">try/except</button>
+      <button class="badge cursor-pointer hover:opacity-80 transition"
+        style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2)"
+        onclick="loadTemplate('value_error')">ValueError</button>
+      <button class="badge cursor-pointer hover:opacity-80 transition"
+        style="background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,140,66,.2)"
+        onclick="loadTemplate('zero_div')">ZeroDivision</button>
+      <button class="badge cursor-pointer hover:opacity-80 transition"
+        style="background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)"
+        onclick="loadTemplate('finally')">finally</button>
+      <button class="badge cursor-pointer hover:opacity-80 transition"
+        style="background:var(--green-dim);color:var(--green);border:1px solid rgba(57,217,138,.2)"
+        onclick="loadTemplate('multi')">Múltiples</button>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div>
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-code text-xs" style="color:var(--text-muted)">📝 Entrada (Python)</span>
+          <button onclick="clearSim()" class="font-code text-xs" style="color:var(--text-muted)">Limpiar</button>
+        </div>
+        <textarea id="sim-input" class="sim-input" placeholder="# Escribe tu código Python aquí&#10;try:&#10;    x = int('hola')&#10;except ValueError:&#10;    print('Error de valor!')"></textarea>
+        <button class="btn btn-green w-full mt-3" onclick="runSimulator()">▶ Ejecutar</button>
+      </div>
+      <div>
+        <div class="font-code text-xs mb-2" style="color:var(--text-muted)">💻 Salida</div>
+        <div id="sim-output" class="sim-output text-gray-500 text-sm">
+          La salida aparecerá aquí...
+        </div>
+        <div id="sim-analysis" class="mt-3 hidden card p-4">
+          <div class="font-code text-xs mb-2" style="color:var(--text-muted)">🔍 ANÁLISIS</div>
+          <div id="sim-analysis-body" class="text-sm"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reference table -->
+    <div class="card p-6 mt-8">
+      <h3 class="font-display font-bold mb-4">📋 Referencia de Excepciones</h3>
+      <div class="space-y-2">
+        <div id="ref-rows"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE: DASHBOARD
+═══════════════════════════════════════ -->
+<div id="page-dashboard" class="page" style="padding-top:56px">
+  <div class="max-w-3xl mx-auto px-5 py-12">
+    <div class="mb-10">
+      <div class="font-code text-xs mb-2" style="color:var(--text-muted)">// Tu rendimiento</div>
+      <h2 class="font-display font-extrabold text-3xl">Dashboard</h2>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+      <div class="card p-5 text-center">
+        <div id="d-xp" class="font-display text-3xl font-extrabold mb-1" style="color:var(--yellow)">0</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">XP TOTAL</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div id="d-streak" class="font-display text-3xl font-extrabold mb-1" style="color:var(--orange)">0</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">RACHA</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div id="d-accuracy" class="font-display text-3xl font-extrabold mb-1" style="color:var(--green)">0%</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">PRECISIÓN</div>
+      </div>
+      <div class="card p-5 text-center">
+        <div id="d-level" class="font-display text-3xl font-extrabold mb-1" style="color:var(--blue)">1</div>
+        <div class="font-code text-xs" style="color:var(--text-muted)">NIVEL</div>
+      </div>
+    </div>
+
+    <!-- Progress per level -->
+    <div class="card p-6 mb-6">
+      <h3 class="font-display font-bold mb-5">Progreso por Nivel</h3>
+      <div id="d-levels-prog" class="space-y-4"></div>
+    </div>
+
+    <!-- Error analysis -->
+    <div class="card p-6 mb-6">
+      <h3 class="font-display font-bold mb-4">Análisis de Errores</h3>
+      <div id="d-errors" class="space-y-2">
+        <p class="text-gray-500 text-sm font-code">// Sin datos todavía. ¡Completa ejercicios!</p>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="card p-6 mb-6">
+      <h3 class="font-display font-bold mb-5">🏆 Logros</h3>
+      <div id="d-achievements" class="grid sm:grid-cols-2 gap-3"></div>
+    </div>
+
+    <!-- Report -->
+    <div class="card p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-display font-bold">📄 Reporte de Sesión</h3>
+        <button onclick="generateReport()" class="btn btn-ghost btn-sm">Generar</button>
+      </div>
+      <div id="d-report" class="code-block hidden text-xs"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ BOTTOM NAV (mobile) ══════════ -->
+<div class="fixed bottom-0 left-0 right-0 sm:hidden z-50"
+     style="background:rgba(7,8,15,.95);border-top:1px solid var(--border);padding:8px 0">
+  <div class="flex justify-around">
+    <button onclick="goPage('home')" class="flex flex-col items-center gap-1 py-1 px-3 text-gray-500 hover:text-white transition">
+      <span>🏠</span><span class="font-code text-xs">Inicio</span>
+    </button>
+    <button onclick="goPage('levels')" class="flex flex-col items-center gap-1 py-1 px-3 text-gray-500 hover:text-white transition">
+      <span>📚</span><span class="font-code text-xs">Niveles</span>
+    </button>
+    <button onclick="goPage('simulator')" class="flex flex-col items-center gap-1 py-1 px-3 text-gray-500 hover:text-white transition">
+      <span>🔬</span><span class="font-code text-xs">Sim.</span>
+    </button>
+    <button onclick="goPage('dashboard')" class="flex flex-col items-center gap-1 py-1 px-3 text-gray-500 hover:text-white transition">
+      <span>📊</span><span class="font-code text-xs">Stats</span>
+    </button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT — APP LOGIC
+════════════════════════════════════════ -->
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  xp: 0,
+  streak: 0,
+  lives: 5,
+  level: 1,
+  correctAnswers: 0,
+  wrongAnswers: 0,
+  completedLevels: [],
+  levelProgress: {1:0,2:0,3:0,4:0,5:0},
+  wrongTypes: {},
+  achievements: {
+    first_correct: false,
+    streak_3: false,
+    streak_5: false,
+    level_1: false,
+    level_3: false,
+    level_5: false,
+    no_errors: false,
+    simulator: false,
+    all_done: false,
+    perfectionist: false,
+  }
+};
+
+// Current lesson state
+let currentLevelId = 1;
+let currentStepIdx = 0;
+let currentSteps = [];
+
+// ── Curriculum data ────────────────────────────────────────────────────────
+const LEVELS = [
+  {
+    id: 1,
+    title: "¿Qué es una excepción?",
+    emoji: "🤔",
+    color: "var(--blue)",
+    dimColor: "var(--blue-dim)",
+    borderColor: "rgba(77,166,255,.3)",
+    xpReward: 100,
+    steps: [
+      {
+        type: "theory",
+        title: "¿Qué es una excepción?",
+        body: `Una <strong style="color:var(--blue)">excepción</strong> es un evento que ocurre durante la ejecución de un programa y que interrumpe el flujo normal de las instrucciones.<br><br>
+        Cuando Python encuentra un error, <strong>lanza</strong> (raise) una excepción. Si no la manejamos, el programa termina abruptamente.<br><br>
+        Los errores más comunes son:<br>
+        • <code style="color:var(--red)">ValueError</code> — valor incorrecto<br>
+        • <code style="color:var(--red)">TypeError</code> — tipo de dato incorrecto<br>
+        • <code style="color:var(--red)">ZeroDivisionError</code> — división por cero`,
+        code: `<span class="cm"># Esto causa una excepción:</span>
+<span class="fn">int</span>(<span class="st">"hola"</span>)
+<span class="cm"># ValueError: invalid literal for int()</span>
+
+<span class="cm"># Esto también:</span>
+resultado = <span class="num">10</span> / <span class="num">0</span>
+<span class="cm"># ZeroDivisionError: division by zero</span>`
+      },
+      {
+        type: "mcq",
+        badge: "❓ OPCIÓN MÚLTIPLE",
+        badgeStyle: "background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)",
+        question: "¿Qué ocurre cuando Python encuentra una excepción no manejada?",
+        options: [
+          "El programa continúa normalmente",
+          "El programa termina y muestra un mensaje de error",
+          "Python ignora el error automáticamente",
+          "Se ejecuta el código desde el principio"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. Cuando una excepción no está manejada, Python termina el programa y muestra un <em>traceback</em> con información del error.",
+        errorType: "concepto_excepcion"
+      },
+      {
+        type: "mcq",
+        badge: "🔍 IDENTIFICAR ERROR",
+        badgeStyle: "background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2)",
+        question: "¿Qué tipo de excepción lanza este código?",
+        code: `resultado = <span class="num">10</span> / <span class="num">0</span>`,
+        options: [
+          "ValueError",
+          "TypeError",
+          "ZeroDivisionError",
+          "NameError"
+        ],
+        correct: 2,
+        explanation: "✅ Correcto. La división entre cero lanza <code style='color:var(--red)'>ZeroDivisionError</code>.",
+        errorType: "tipo_error"
+      },
+      {
+        type: "predict",
+        badge: "🎯 PREDECIR SALIDA",
+        badgeStyle: "background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)",
+        question: "¿Qué imprime este código?",
+        code: `x = <span class="fn">int</span>(<span class="st">"42"</span>)
+<span class="fn">print</span>(x + <span class="num">8</span>)`,
+        options: [
+          "ValueError",
+          "50",
+          "\"42\"8",
+          "Error de tipo"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. \"42\" es un string válido para convertir a int, por lo que x = 42 y 42 + 8 = 50.",
+        errorType: "prediccion"
+      }
+    ]
+  },
+  {
+    id: 2,
+    title: "try / except",
+    emoji: "🛡️",
+    color: "var(--green)",
+    dimColor: "var(--green-dim)",
+    borderColor: "rgba(57,217,138,.3)",
+    xpReward: 150,
+    steps: [
+      {
+        type: "theory",
+        title: "try / except — Tu escudo contra errores",
+        body: `El bloque <strong style="color:var(--green)">try/except</strong> es la herramienta fundamental para manejar excepciones en Python.<br><br>
+        <strong>try:</strong> contiene el código que podría fallar.<br>
+        <strong>except:</strong> contiene el código que se ejecuta si hay un error.<br><br>
+        Esto evita que el programa termine abruptamente y nos permite dar respuestas útiles al usuario.`,
+        code: `<span class="kw">try</span>:
+    numero = <span class="fn">int</span>(<span class="fn">input</span>(<span class="st">"Ingresa un número: "</span>))
+    resultado = <span class="num">10</span> / numero
+    <span class="fn">print</span>(<span class="st">f"Resultado: </span>{resultado}<span class="st">"</span>)
+<span class="kw">except</span> <span class="er">ValueError</span>:
+    <span class="fn">print</span>(<span class="st">"⚠️ Debes ingresar un número válido"</span>)
+<span class="kw">except</span> <span class="er">ZeroDivisionError</span>:
+    <span class="fn">print</span>(<span class="st">"⚠️ No puedes dividir entre cero"</span>)`
+      },
+      {
+        type: "fill",
+        badge: "✍️ COMPLETAR CÓDIGO",
+        badgeStyle: "background:var(--green-dim);color:var(--green);border:1px solid rgba(57,217,138,.2)",
+        question: "Completa el bloque para capturar el ValueError:",
+        code: `<span class="kw">try</span>:
+    x = <span class="fn">int</span>(<span class="st">"abc"</span>)
+<span class="kw">except</span> <span class="er">___</span>:
+    <span class="fn">print</span>(<span class="st">"Valor inválido"</span>)`,
+        answer: "ValueError",
+        placeholder: "Nombre de la excepción",
+        hint: "💡 El error de convertir 'abc' a int es un...Error de valor",
+        explanation: "✅ Correcto. <code>ValueError</code> se lanza cuando el valor no puede convertirse al tipo esperado.",
+        errorType: "fill_except"
+      },
+      {
+        type: "mcq",
+        badge: "❓ OPCIÓN MÚLTIPLE",
+        badgeStyle: "background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)",
+        question: "¿Qué imprime este código?",
+        code: `<span class="kw">try</span>:
+    x = <span class="fn">int</span>(<span class="st">"hola"</span>)
+<span class="kw">except</span> <span class="er">ValueError</span>:
+    <span class="fn">print</span>(<span class="st">"Error detectado"</span>)`,
+        options: [
+          "Nada, el código falla silenciosamente",
+          "Error detectado",
+          "ValueError: invalid literal",
+          "hola"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. El ValueError es capturado por except y se imprime 'Error detectado'.",
+        errorType: "prediccion_try"
+      },
+      {
+        type: "mcq",
+        badge: "🔍 IDENTIFICAR ERROR",
+        badgeStyle: "background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2)",
+        question: "¿Cuál es el problema en este código?",
+        code: `<span class="kw">except</span> <span class="er">ValueError</span>:
+    <span class="fn">print</span>(<span class="st">"Error"</span>)
+<span class="kw">try</span>:
+    x = <span class="fn">int</span>(<span class="st">"abc"</span>)`,
+        options: [
+          "Ninguno, el código es correcto",
+          "El bloque except va antes que try",
+          "Falta el bloque finally",
+          "El ValueError está mal escrito"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. El bloque <code>try</code> siempre debe ir antes que <code>except</code>.",
+        errorType: "orden_try_except"
+      }
+    ]
+  },
+  {
+    id: 3,
+    title: "Tipos de errores",
+    emoji: "⚡",
+    color: "var(--orange)",
+    dimColor: "var(--orange-dim)",
+    borderColor: "rgba(255,140,66,.3)",
+    xpReward: 200,
+    steps: [
+      {
+        type: "theory",
+        title: "Tipos de Excepciones en Python",
+        body: `Python tiene una jerarquía de excepciones. Las más comunes son:<br><br>
+        🔴 <strong style="color:var(--red)">ValueError</strong> — Valor incorrecto para el tipo<br>
+        🟠 <strong style="color:var(--orange)">TypeError</strong> — Tipo de dato incorrecto<br>
+        🟡 <strong style="color:var(--yellow)">ZeroDivisionError</strong> — División por cero<br>
+        🔵 <strong style="color:var(--blue)">NameError</strong> — Variable no definida<br>
+        🟣 <strong style="color:var(--purple)">IndexError</strong> — Índice fuera de rango<br>
+        🟢 <strong style="color:var(--green)">KeyError</strong> — Clave no existe en dict<br><br>
+        Puedes capturar <strong>múltiples excepciones</strong> con except o usando tuplas.`,
+        code: `<span class="kw">try</span>:
+    datos = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>]
+    <span class="fn">print</span>(datos[<span class="num">10</span>])     <span class="cm"># IndexError</span>
+<span class="kw">except</span> <span class="er">IndexError</span>:
+    <span class="fn">print</span>(<span class="st">"Índice fuera de rango"</span>)
+<span class="kw">except</span> (<span class="er">ValueError</span>, <span class="er">TypeError</span>):
+    <span class="fn">print</span>(<span class="st">"Error de valor o tipo"</span>)
+<span class="kw">except</span> <span class="er">Exception</span> <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="st">f"Error inesperado: </span>{e}<span class="st">"</span>)`
+      },
+      {
+        type: "mcq",
+        badge: "⚡ IDENTIFICAR EXCEPCIÓN",
+        badgeStyle: "background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,140,66,.2)",
+        question: "¿Qué excepción lanza este código?",
+        code: `<span class="fn">print</span>(<span class="st">"2"</span> + <span class="num">2</span>)`,
+        options: ["ValueError", "TypeError", "SyntaxError", "NameError"],
+        correct: 1,
+        explanation: "✅ Correcto. No se puede sumar un string y un int directamente → <code>TypeError</code>.",
+        errorType: "tipo_type_error"
+      },
+      {
+        type: "mcq",
+        badge: "❓ OPCIÓN MÚLTIPLE",
+        badgeStyle: "background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,166,255,.2)",
+        question: "¿Qué excepción lanza este código?",
+        code: `lista = [<span class="st">"a"</span>, <span class="st">"b"</span>, <span class="st">"c"</span>]
+<span class="fn">print</span>(lista[<span class="num">99</span>])`,
+        options: ["KeyError", "ValueError", "IndexError", "NameError"],
+        correct: 2,
+        explanation: "✅ Correcto. Acceder a un índice inexistente en una lista lanza <code>IndexError</code>.",
+        errorType: "tipo_index_error"
+      },
+      {
+        type: "fill",
+        badge: "✍️ COMPLETAR CÓDIGO",
+        badgeStyle: "background:var(--orange-dim);color:var(--orange);border:1px solid rgba(255,140,66,.2)",
+        question: "¿Qué excepción debes capturar para acceder a una clave que no existe en un diccionario?",
+        code: `datos = {<span class="st">"nombre"</span>: <span class="st">"Ana"</span>}
+<span class="kw">try</span>:
+    <span class="fn">print</span>(datos[<span class="st">"edad"</span>])
+<span class="kw">except</span> <span class="er">___</span>:
+    <span class="fn">print</span>(<span class="st">"Clave no encontrada"</span>)`,
+        answer: "KeyError",
+        placeholder: "Tipo de excepción",
+        hint: "💡 Cuando una clave no existe en un dict → ...Error de clave",
+        explanation: "✅ Correcto. <code>KeyError</code> se lanza cuando se accede a una clave inexistente en un diccionario.",
+        errorType: "fill_key_error"
+      },
+      {
+        type: "predict",
+        badge: "🎯 PREDECIR SALIDA",
+        badgeStyle: "background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)",
+        question: "¿Qué imprime este código?",
+        code: `<span class="kw">try</span>:
+    x = variable_inexistente
+<span class="kw">except</span> <span class="er">NameError</span>:
+    <span class="fn">print</span>(<span class="st">"Variable no definida"</span>)
+<span class="kw">except</span> <span class="er">Exception</span>:
+    <span class="fn">print</span>(<span class="st">"Error general"</span>)`,
+        options: [
+          "Error general",
+          "Variable no definida",
+          "NameError: name 'variable_inexistente' is not defined",
+          "No imprime nada"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. El <code>NameError</code> es capturado por el primer except más específico.",
+        errorType: "prediccion_name_error"
+      }
+    ]
+  },
+  {
+    id: 4,
+    title: "finally y else",
+    emoji: "🔄",
+    color: "var(--purple)",
+    dimColor: "var(--purple-dim)",
+    borderColor: "rgba(192,132,252,.3)",
+    xpReward: 200,
+    steps: [
+      {
+        type: "theory",
+        title: "finally y else — Control total del flujo",
+        body: `El manejo completo de excepciones incluye cuatro bloques:<br><br>
+        🛡️ <strong style="color:var(--green)">try</strong> — código que puede fallar<br>
+        ⚡ <strong style="color:var(--red)">except</strong> — se ejecuta si hay error<br>
+        ✅ <strong style="color:var(--blue)">else</strong> — se ejecuta solo si NO hubo error<br>
+        🔄 <strong style="color:var(--purple)">finally</strong> — se ejecuta SIEMPRE (con o sin error)<br><br>
+        <code>finally</code> es ideal para liberar recursos (cerrar archivos, conexiones, etc.).`,
+        code: `<span class="kw">try</span>:
+    numero = <span class="fn">int</span>(<span class="st">"42"</span>)
+    resultado = <span class="num">100</span> / numero
+<span class="kw">except</span> <span class="er">ValueError</span>:
+    <span class="fn">print</span>(<span class="st">"Valor inválido"</span>)
+<span class="kw">except</span> <span class="er">ZeroDivisionError</span>:
+    <span class="fn">print</span>(<span class="st">"División por cero"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="st">f"✅ Resultado: </span>{resultado}<span class="st">"</span>)  <span class="cm"># solo si no hay error</span>
+<span class="kw">finally</span>:
+    <span class="fn">print</span>(<span class="st">"🔄 Operación finalizada"</span>)  <span class="cm"># siempre</span>`
+      },
+      {
+        type: "mcq",
+        badge: "🔄 finally / else",
+        badgeStyle: "background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)",
+        question: "¿Cuándo se ejecuta el bloque finally?",
+        options: [
+          "Solo si no hay ningún error",
+          "Solo si hay un error",
+          "Siempre, haya o no error",
+          "Solo si se especifica explícitamente"
+        ],
+        correct: 2,
+        explanation: "✅ Correcto. <code>finally</code> siempre se ejecuta, independientemente de si ocurrió una excepción o no.",
+        errorType: "concepto_finally"
+      },
+      {
+        type: "predict",
+        badge: "🎯 PREDECIR SALIDA",
+        badgeStyle: "background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)",
+        question: "¿Qué imprime este código?",
+        code: `<span class="kw">try</span>:
+    x = <span class="num">10</span> / <span class="num">0</span>
+<span class="kw">except</span> <span class="er">ZeroDivisionError</span>:
+    <span class="fn">print</span>(<span class="st">"A"</span>)
+<span class="kw">else</span>:
+    <span class="fn">print</span>(<span class="st">"B"</span>)
+<span class="kw">finally</span>:
+    <span class="fn">print</span>(<span class="st">"C"</span>)`,
+        options: ["A", "B C", "A C", "A B C"],
+        correct: 2,
+        explanation: "✅ Correcto. Hay ZeroDivisionError → se imprime A (except). else NO se ejecuta. finally siempre → C.",
+        errorType: "prediccion_finally"
+      },
+      {
+        type: "fill",
+        badge: "✍️ COMPLETAR CÓDIGO",
+        badgeStyle: "background:var(--purple-dim);color:var(--purple);border:1px solid rgba(192,132,252,.2)",
+        question: "¿Qué bloque se ejecuta solo cuando NO hay errores?",
+        code: `<span class="kw">try</span>:
+    resultado = <span class="num">10</span> / <span class="num">2</span>
+<span class="kw">except</span> <span class="er">ZeroDivisionError</span>:
+    <span class="fn">print</span>(<span class="st">"Error"</span>)
+<span class="kw">___</span>:
+    <span class="fn">print</span>(<span class="st">f"Éxito: </span>{resultado}<span class="st">"</span>)`,
+        answer: "else",
+        placeholder: "Nombre del bloque",
+        hint: "💡 Este bloque solo corre cuando try fue exitoso...",
+        explanation: "✅ Correcto. El bloque <code>else</code> se ejecuta únicamente si el bloque try no lanzó ninguna excepción.",
+        errorType: "fill_else"
+      }
+    ]
+  },
+  {
+    id: 5,
+    title: "Buenas prácticas",
+    emoji: "⭐",
+    color: "var(--yellow)",
+    dimColor: "var(--yellow-dim)",
+    borderColor: "rgba(255,209,102,.3)",
+    xpReward: 300,
+    steps: [
+      {
+        type: "theory",
+        title: "Buenas Prácticas en Manejo de Excepciones",
+        body: `Manejar excepciones bien es un arte. Estas son las reglas de oro:<br><br>
+        ✅ <strong>Sé específico</strong> — Captura excepciones concretas, no solo <code>Exception</code><br>
+        ✅ <strong>No silencies errores</strong> — Un <code>except: pass</code> esconde bugs<br>
+        ✅ <strong>Usa finally</strong> — Para liberar recursos siempre<br>
+        ✅ <strong>Usa <code>as e</code></strong> — Para acceder al mensaje del error<br>
+        ✅ <strong>Crea excepciones propias</strong> — Para errores de tu dominio<br>
+        ❌ <strong>Evita</strong> — Capturar todo con except genérico sin logging`,
+        code: `<span class="cm"># ❌ MAL — demasiado genérico:</span>
+<span class="kw">try</span>:
+    procesar()
+<span class="kw">except</span>:
+    <span class="kw">pass</span>  <span class="cm"># Silencia TODOS los errores</span>
+
+<span class="cm"># ✅ BIEN — específico y útil:</span>
+<span class="kw">try</span>:
+    resultado = procesar(datos)
+<span class="kw">except</span> <span class="er">ValueError</span> <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="st">f"Dato inválido: </span>{e}<span class="st">"</span>)
+<span class="kw">except</span> <span class="er">TypeError</span> <span class="kw">as</span> e:
+    <span class="fn">print</span>(<span class="st">f"Tipo incorrecto: </span>{e}<span class="st">"</span>)
+<span class="kw">finally</span>:
+    limpiar_recursos()`
+      },
+      {
+        type: "mcq",
+        badge: "⭐ BUENAS PRÁCTICAS",
+        badgeStyle: "background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,209,102,.2)",
+        question: "¿Cuál es el problema con este código?",
+        code: `<span class="kw">try</span>:
+    resultado = calcular(x)
+<span class="kw">except</span>:
+    <span class="kw">pass</span>`,
+        options: [
+          "La sintaxis es incorrecta",
+          "Silencia todos los errores sin registrarlos",
+          "Debería usar finally en vez de except",
+          "El código está bien"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. <code>except: pass</code> silencia absolutamente todos los errores sin dar información útil. Es una muy mala práctica.",
+        errorType: "buena_practica"
+      },
+      {
+        type: "fill",
+        badge: "✍️ COMPLETAR CÓDIGO",
+        badgeStyle: "background:var(--yellow-dim);color:var(--yellow);border:1px solid rgba(255,209,102,.2)",
+        question: "Completa para acceder al mensaje del error:",
+        code: `<span class="kw">try</span>:
+    x = <span class="fn">int</span>(<span class="st">"abc"</span>)
+<span class="kw">except</span> <span class="er">ValueError</span> <span class="kw">___</span> e:
+    <span class="fn">print</span>(<span class="st">f"Error: </span>{e}<span class="st">"</span>)`,
+        answer: "as",
+        placeholder: "Palabra clave",
+        hint: "💡 En inglés 'como' o 'igual que'...",
+        explanation: "✅ Correcto. La palabra clave <code>as</code> permite capturar la instancia de la excepción en una variable.",
+        errorType: "fill_as"
+      },
+      {
+        type: "mcq",
+        badge: "🏆 EXPERTO",
+        badgeStyle: "background:var(--green-dim);color:var(--green);border:1px solid rgba(57,217,138,.2)",
+        question: "¿Para qué sirve crear una excepción personalizada?",
+        code: `<span class="kw">class</span> <span class="fn">SaldoInsuficiente</span>(<span class="er">Exception</span>):
+    <span class="kw">pass</span>
+
+<span class="kw">def</span> <span class="fn">retirar</span>(saldo, monto):
+    <span class="kw">if</span> monto > saldo:
+        <span class="kw">raise</span> <span class="er">SaldoInsuficiente</span>(<span class="st">"Fondos insuficientes"</span>)`,
+        options: [
+          "Es obligatorio, Python lo requiere",
+          "Para representar errores específicos de nuestra lógica de negocio",
+          "Para reemplazar todos los except",
+          "Solo sirve para aplicaciones avanzadas"
+        ],
+        correct: 1,
+        explanation: "✅ Correcto. Las excepciones personalizadas nos permiten representar errores específicos de nuestro dominio de aplicación.",
+        errorType: "excepcion_custom"
+      }
+    ]
+  }
+];
+
+// ── Simulator templates ────────────────────────────────────────────────────
+const TEMPLATES = {
+  try_except: `try:\n    numero = int("hola")\n    print(f"Número: {numero}")\nexcept ValueError:\n    print("Error: entrada no válida")`,
+  value_error: `try:\n    x = int("abc")\nexcept ValueError as e:\n    print(f"ValueError detectado: {e}")`,
+  zero_div: `try:\n    resultado = 10 / 0\nexcept ZeroDivisionError:\n    print("No se puede dividir entre cero")\nfinally:\n    print("Operación finalizada")`,
+  finally: `try:\n    archivo = "datos.txt"\n    # simulando apertura\n    datos = int("99")\nexcept ValueError:\n    print("Error en datos")\nelse:\n    print(f"Datos cargados: {datos}")\nfinally:\n    print("Recurso liberado")`,
+  multi: `try:\n    lista = [1, 2, 3]\n    print(lista[10])\nexcept IndexError:\n    print("IndexError: índice fuera de rango")\nexcept (ValueError, TypeError) as e:\n    print(f"Valor o tipo incorrecto: {e}")\nexcept Exception as e:\n    print(f"Error inesperado: {e}")\nfinally:\n    print("Fin de la operación")`
+};
+
+// Simulator cases: pattern → response
+const SIM_CASES = [
+  { match: /int\s*\(\s*["'][^"']*[a-zA-Z][^"']*["']\s*\)/,
+    output: `<span style="color:var(--red)">ValueError: invalid literal for int() with base 10</span>\n<span style="color:var(--green)">✅ Excepción capturada: ValueError</span>`,
+    type: "ValueError", handled: true },
+  { match: /\/\s*0(?!\d)/,
+    output: `<span style="color:var(--red)">ZeroDivisionError: division by zero</span>\n<span style="color:var(--green)">✅ Excepción capturada: ZeroDivisionError</span>`,
+    type: "ZeroDivisionError", handled: true },
+  { match: /\[\s*\d{2,}\s*\]/,
+    output: `<span style="color:var(--red)">IndexError: list index out of range</span>\n<span style="color:var(--green)">✅ Excepción capturada: IndexError</span>`,
+    type: "IndexError", handled: true },
+  { match: /variable_inexistente|undefined_var/,
+    output: `<span style="color:var(--red)">NameError: name 'variable_inexistente' is not defined</span>\n<span style="color:var(--green)">✅ Excepción capturada: NameError</span>`,
+    type: "NameError", handled: true },
+  { match: /["']\s*\+\s*\d|\d\s*\+\s*["']/,
+    output: `<span style="color:var(--red)">TypeError: can only concatenate str (not "int") to str</span>\n<span style="color:var(--green)">✅ Excepción capturada: TypeError</span>`,
+    type: "TypeError", handled: true },
+  { match: /print\s*\(/,
+    output: `<span style="color:var(--green)">✅ Código ejecutado sin errores</span>`,
+    type: null, handled: false }
+];
+
+const EXCEPTION_REF = [
+  { name: "ValueError", desc: "Valor incorrecto para el tipo", color: "var(--red)", ex: "int('hola')" },
+  { name: "TypeError", desc: "Tipo de dato incorrecto", color: "var(--orange)", ex: "'a' + 1" },
+  { name: "ZeroDivisionError", desc: "División entre cero", color: "var(--yellow)", ex: "10 / 0" },
+  { name: "NameError", desc: "Variable no definida", color: "var(--blue)", ex: "print(x) # x no existe" },
+  { name: "IndexError", desc: "Índice fuera de rango", color: "var(--purple)", ex: "[1,2][99]" },
+  { name: "KeyError", desc: "Clave no existe en dict", color: "var(--green)", ex: "d = {}; d['k']" },
+  { name: "AttributeError", desc: "Atributo no existe en objeto", color: "var(--red)", ex: "'str'.unknown()" },
+  { name: "FileNotFoundError", desc: "Archivo no encontrado", color: "var(--orange)", ex: "open('x.txt')" },
+];
+
+const ACHIEVEMENTS_DEF = [
+  { id: "first_correct", emoji: "🎯", title: "Primer Acierto", desc: "Responde correctamente por primera vez" },
+  { id: "streak_3", emoji: "🔥", title: "En Racha x3", desc: "3 respuestas correctas seguidas" },
+  { id: "streak_5", emoji: "⚡", title: "Imparable x5", desc: "5 respuestas correctas seguidas" },
+  { id: "level_1", emoji: "🛡️", title: "Primer Nivel", desc: "Completa el Nivel 1" },
+  { id: "level_3", emoji: "🏆", title: "A Mitad de Camino", desc: "Completa el Nivel 3" },
+  { id: "level_5", emoji: "⭐", title: "Maestro Python", desc: "Completa todos los niveles" },
+  { id: "no_errors", emoji: "💎", title: "Sin Errores", desc: "Completa un nivel sin fallar" },
+  { id: "simulator", emoji: "🔬", title: "Científico del Código", desc: "Usa el simulador por primera vez" },
+  { id: "all_done", emoji: "🎓", title: "Graduado", desc: "Completa el 100% del curso" },
+  { id: "perfectionist", emoji: "👑", title: "Perfeccionista", desc: "Alcanza 90%+ de precisión con 10+ ejercicios" },
+];
+
+// ── Navigation ─────────────────────────────────────────────────────────────
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'levels') renderLevels();
+  if (id === 'home') updateHomeProgress();
+  if (id === 'simulator') renderRef();
+}
+
+// ── Levels map ─────────────────────────────────────────────────────────────
+function renderLevels() {
+  const list = document.getElementById('levels-list');
+  list.innerHTML = LEVELS.map(lv => {
+    const done = state.completedLevels.includes(lv.id);
+    const isNext = !done && (lv.id === 1 || state.completedLevels.includes(lv.id - 1));
+    const locked = !done && !isNext;
+    let cls = 'lvl-pill';
+    if (done) cls += ' done';
+    else if (isNext) cls += ' active-lv';
+    else cls += ' locked';
+
+    const pct = state.levelProgress[lv.id] || 0;
+    return `
+    <div class="${cls}" onclick="${locked ? '' : `startLesson(${lv.id})`}">
+      <div class="text-2xl">${lv.emoji}</div>
+      <div class="flex-1">
+        <div class="flex justify-between items-center">
+          <span class="font-display font-bold text-sm">Nivel ${lv.id}: ${lv.title}</span>
+          <div class="flex items-center gap-2">
+            ${done ? `<span class="font-code text-xs" style="color:var(--green)">✓ +${lv.xpReward} XP</span>` : ''}
+            ${locked ? '<span style="font-size:.9rem">🔒</span>' : ''}
+          </div>
+        </div>
+        <div class="prog-track mt-2" style="height:6px">
+          <div class="prog-fill" style="width:${pct}%;background:${lv.color}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const total = (state.completedLevels.length / LEVELS.length) * 100;
+  document.getElementById('lvl-prog-fill').style.width = total + '%';
+  document.getElementById('lvl-prog-pct').textContent = Math.round(total) + '%';
+}
+
+// ── Start lesson ───────────────────────────────────────────────────────────
+function startLesson(levelId) {
+  const lv = LEVELS.find(l => l.id === levelId);
+  if (!lv) return;
+  currentLevelId = levelId;
+  currentStepIdx = 0;
+  currentSteps = lv.steps;
+  lessonWrongThisLevel = 0;
+  goPage('lesson');
+  renderStep();
+}
+
+let lessonWrongThisLevel = 0;
+
+function renderStep() {
+  const step = currentSteps[currentStepIdx];
+  const total = currentSteps.length;
+  const pct = (currentStepIdx / total) * 100;
+
+  document.getElementById('lesson-prog').style.width = pct + '%';
+  document.getElementById('lesson-step-label').textContent = `${currentStepIdx + 1}/${total}`;
+
+  // Hide all
+  ['theory-card','exercise-card','complete-card'].forEach(id => {
+    document.getElementById(id).classList.add('hidden');
+  });
+  document.getElementById('complete-card').style.display = 'none';
+
+  if (step.type === 'theory') {
+    renderTheory(step);
+  } else {
+    renderExercise(step);
+  }
+}
+
+function renderTheory(step) {
+  const card = document.getElementById('theory-card');
+  card.classList.remove('hidden');
+  document.getElementById('theory-title').textContent = step.title;
+  document.getElementById('theory-body').innerHTML = step.body;
+  const codeEl = document.getElementById('theory-code');
+  if (step.code) {
+    codeEl.innerHTML = step.code;
+    codeEl.classList.remove('hidden');
+  } else {
+    codeEl.classList.add('hidden');
+  }
+}
+
+function renderExercise(step) {
+  const card = document.getElementById('exercise-card');
+  card.classList.remove('hidden');
+
+  document.getElementById('ex-badge').innerHTML = step.badge;
+  document.getElementById('ex-badge').setAttribute('style', step.badgeStyle + ';display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:.72rem;font-family:JetBrains Mono,monospace;font-weight:700');
+  document.getElementById('ex-question').textContent = step.question;
+
+  const codeEl = document.getElementById('ex-code-preview');
+  if (step.code) { codeEl.innerHTML = step.code; codeEl.classList.remove('hidden'); }
+  else codeEl.classList.add('hidden');
+
+  document.getElementById('ex-feedback').classList.add('hidden');
+  document.getElementById('ex-next-btn').classList.add('hidden');
+
+  const body = document.getElementById('ex-body');
+
+  if (step.type === 'mcq' || step.type === 'predict') {
+    body.innerHTML = `<div class="space-y-3">${step.options.map((o, i) =>
+      `<button class="opt w-full text-left" onclick="checkMCQ(${i})">${String.fromCharCode(65+i)}) ${o}</button>`
+    ).join('')}</div>`;
+  } else if (step.type === 'fill') {
+    body.innerHTML = `
+      <div class="mb-3">
+        <input id="fill-inp" class="fill-input" placeholder="${step.placeholder}" />
+        <p class="font-code text-xs mt-2" style="color:var(--text-muted)">${step.hint}</p>
+      </div>
+      <button class="btn btn-green w-full" onclick="checkFill()">Verificar</button>`;
+    document.getElementById('fill-inp').addEventListener('keydown', e => { if (e.key === 'Enter') checkFill(); });
+  }
+}
+
+// ── Check MCQ ──────────────────────────────────────────────────────────────
+function checkMCQ(chosen) {
+  const step = currentSteps[currentStepIdx];
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach(o => o.classList.add('disabled'));
+  const correct = step.correct === chosen;
+
+  opts[chosen].classList.add(correct ? 'correct' : 'wrong');
+  if (!correct) opts[step.correct].classList.add('correct');
+
+  handleResult(correct, step);
+}
+
+// ── Check Fill ─────────────────────────────────────────────────────────────
+function checkFill() {
+  const step = currentSteps[currentStepIdx];
+  const inp = document.getElementById('fill-inp');
+  if (!inp) return;
+  const val = inp.value.trim();
+  const correct = val.toLowerCase() === step.answer.toLowerCase();
+  inp.classList.add(correct ? 'correct' : 'wrong');
+  inp.disabled = true;
+  document.querySelector('#ex-body button')?.remove();
+  handleResult(correct, step);
+}
+
+// ── Handle result ──────────────────────────────────────────────────────────
+function handleResult(correct, step) {
+  const fb = document.getElementById('ex-feedback');
+  fb.classList.remove('hidden');
+
+  if (correct) {
+    state.correctAnswers++;
+    state.streak++;
+    state.xp += 20;
+    fb.innerHTML = step.explanation;
+    fb.style.background = 'var(--green-dim)';
+    fb.style.border = '1px solid rgba(57,217,138,.3)';
+    fb.style.color = '#e2e8f0';
+    showXpToast('+20 XP');
+    checkAchievements();
+  } else {
+    state.wrongAnswers++;
+    state.streak = 0;
+    state.lives = Math.max(0, state.lives - 1);
+    lessonWrongThisLevel++;
+    if (step.errorType) {
+      state.wrongTypes[step.errorType] = (state.wrongTypes[step.errorType] || 0) + 1;
+    }
+    fb.innerHTML = `❌ Incorrecto. ${step.explanation}`;
+    fb.style.background = 'var(--red-dim)';
+    fb.style.border = '1px solid rgba(255,77,106,.3)';
+    fb.style.color = '#e2e8f0';
+  }
+
+  updateNav();
+  document.getElementById('ex-next-btn').classList.remove('hidden');
+}
+
+// ── Next step ─────────────────────────────────────────────────────────────
+function nextStep() {
+  currentStepIdx++;
+  const lv = LEVELS.find(l => l.id === currentLevelId);
+
+  // Update level progress
+  const pct = Math.round((currentStepIdx / currentSteps.length) * 100);
+  state.levelProgress[currentLevelId] = Math.min(100, pct);
+
+  if (currentStepIdx >= currentSteps.length) {
+    showCompletion();
+  } else {
+    renderStep();
+  }
+}
+
+function showCompletion() {
+  ['theory-card','exercise-card'].forEach(id => document.getElementById(id).classList.add('hidden'));
+  const cc = document.getElementById('complete-card');
+  cc.style.display = 'block';
+  cc.classList.remove('hidden');
+
+  const lv = LEVELS.find(l => l.id === currentLevelId);
+  if (!state.completedLevels.includes(currentLevelId)) {
+    state.completedLevels.push(currentLevelId);
+    state.xp += lv.xpReward;
+    state.levelProgress[currentLevelId] = 100;
+    checkAchievements();
+  }
+
+  document.getElementById('complete-msg').textContent =
+    `Has completado "${lv.title}". ¡Sigue así!`;
+  document.getElementById('complete-xp').textContent = `+${lv.xpReward} XP`;
+
+  const nextBtn = document.getElementById('next-level-btn');
+  if (currentLevelId < LEVELS.length) nextBtn.classList.remove('hidden');
+  else nextBtn.classList.add('hidden');
+
+  updateNav();
+  showXpToast(`+${lv.xpReward} XP 🎉`);
+}
+
+function nextLevel() {
+  if (currentLevelId < LEVELS.length) startLesson(currentLevelId + 1);
+}
+
+// ── Simulator ─────────────────────────────────────────────────────────────
+function loadTemplate(t) { document.getElementById('sim-input').value = TEMPLATES[t] || ''; }
+function clearSim() {
+  document.getElementById('sim-input').value = '';
+  document.getElementById('sim-output').innerHTML = '<span style="color:var(--text-muted)">La salida aparecerá aquí...</span>';
+  document.getElementById('sim-analysis').classList.add('hidden');
+}
+
+function runSimulator() {
+  if (!state.achievements.simulator) {
+    state.achievements.simulator = true;
+    showXpToast('+10 XP 🔬');
+    state.xp += 10;
+    updateNav();
+  }
+  const code = document.getElementById('sim-input').value.trim();
+  if (!code) { document.getElementById('sim-output').innerHTML = '<span style="color:var(--orange)">⚠️ Escribe código primero.</span>'; return; }
+
+  const hasExcept = /except/.test(code);
+  let matched = null;
+
+  for (const c of SIM_CASES) {
+    if (c.match.test(code)) { matched = c; break; }
+  }
+
+  const out = document.getElementById('sim-output');
+  const analysis = document.getElementById('sim-analysis');
+  const abody = document.getElementById('sim-analysis-body');
+
+  if (!matched) {
+    out.innerHTML = `<span style="color:var(--green)">✅ Código ejecutado sin errores detectados.</span>`;
+    analysis.classList.add('hidden');
+    return;
+  }
+
+  let outputHtml = '';
+  if (matched.type && !hasExcept) {
+    outputHtml = `<span style="color:var(--red)">Traceback (most recent call last):\n  File "&lt;stdin&gt;", line 2\n${matched.type}: ${getErrorMsg(matched.type)}</span>`;
+  } else {
+    outputHtml = matched.output;
+  }
+
+  out.innerHTML = outputHtml;
+
+  if (matched.type) {
+    analysis.classList.remove('hidden');
+    abody.innerHTML = `
+      <div class="flex items-center gap-2 mb-2">
+        <span style="font-size:1.1rem">🔍</span>
+        <span class="font-code text-xs font-bold" style="color:var(--orange)">${matched.type}</span>
+        ${hasExcept ? `<span class="badge" style="background:var(--green-dim);color:var(--green);border:1px solid rgba(57,217,138,.2)">CAPTURADA ✓</span>` : `<span class="badge" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2)">SIN MANEJAR</span>`}
+      </div>
+      <p class="text-gray-300 text-xs">${getErrorDesc(matched.type)}</p>
+      ${!hasExcept ? '<p class="text-yellow-400 text-xs mt-2">💡 Tip: Usa try/except para capturar esta excepción.</p>' : ''}`;
+  } else {
+    analysis.classList.add('hidden');
+  }
+}
+
+function getErrorMsg(type) {
+  const m = { ValueError: "invalid literal for int() with base 10: 'abc'", ZeroDivisionError: "division by zero", IndexError: "list index out of range", NameError: "name 'variable_inexistente' is not defined", TypeError: "can only concatenate str (not \"int\") to str" };
+  return m[type] || 'error';
+}
+function getErrorDesc(type) {
+  const d = { ValueError: "Ocurre cuando una función recibe un argumento con el tipo correcto pero un valor inapropiado.", ZeroDivisionError: "Ocurre cuando el divisor en una operación de división es cero.", IndexError: "Ocurre cuando se intenta acceder a un índice que está fuera del rango de una secuencia.", NameError: "Ocurre cuando se usa una variable que no ha sido definida.", TypeError: "Ocurre cuando una operación se aplica a un objeto de tipo inapropiado." };
+  return d[type] || '';
+}
+
+function renderRef() {
+  document.getElementById('ref-rows').innerHTML = EXCEPTION_REF.map(r => `
+    <div class="flex items-start gap-4 p-3 rounded-lg" style="background:var(--bg3)">
+      <code class="font-code text-xs font-bold whitespace-nowrap" style="color:${r.color}">${r.name}</code>
+      <div class="flex-1">
+        <div class="text-xs text-gray-300">${r.desc}</div>
+        <code class="font-code text-xs" style="color:var(--text-muted)">${r.ex}</code>
+      </div>
+    </div>`).join('');
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const total = state.correctAnswers + state.wrongAnswers;
+  const acc = total > 0 ? Math.round((state.correctAnswers / total) * 100) : 0;
+  document.getElementById('d-xp').textContent = state.xp;
+  document.getElementById('d-streak').textContent = state.streak;
+  document.getElementById('d-accuracy').textContent = acc + '%';
+  document.getElementById('d-level').textContent = state.level;
+
+  // Levels progress
+  document.getElementById('d-levels-prog').innerHTML = LEVELS.map(lv => {
+    const pct = state.levelProgress[lv.id] || 0;
+    const done = state.completedLevels.includes(lv.id);
+    return `<div>
+      <div class="flex justify-between mb-1">
+        <span class="text-sm">${lv.emoji} Nivel ${lv.id}: ${lv.title}</span>
+        <span class="font-code text-xs" style="color:${lv.color}">${pct}%</span>
+      </div>
+      <div class="prog-track" style="height:8px">
+        <div class="prog-fill" style="width:${pct}%;background:${lv.color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Error analysis
+  const errs = Object.entries(state.wrongTypes);
+  if (errs.length) {
+    const sorted = errs.sort((a, b) => b[1] - a[1]);
+    document.getElementById('d-errors').innerHTML = sorted.map(([k, v]) =>
+      `<div class="flex justify-between items-center p-3 rounded-lg" style="background:var(--bg3)">
+        <span class="font-code text-xs">${k.replace(/_/g,' ')}</span>
+        <span class="badge" style="background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.2)">${v} error${v>1?'es':''}</span>
+      </div>`).join('');
+  }
+
+  // Achievements
+  document.getElementById('d-achievements').innerHTML = ACHIEVEMENTS_DEF.map(a =>
+    `<div class="ach ${state.achievements[a.id] ? 'earned' : ''}">
+      <span style="font-size:1.5rem">${a.emoji}</span>
+      <div>
+        <div class="font-display font-bold text-sm ${state.achievements[a.id] ? '' : 'text-gray-600'}">${a.title}</div>
+        <div class="text-xs ${state.achievements[a.id] ? 'text-gray-400' : 'text-gray-700'}">${a.desc}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ── Report ─────────────────────────────────────────────────────────────────
+function generateReport() {
+  const total = state.correctAnswers + state.wrongAnswers;
+  const acc = total > 0 ? ((state.correctAnswers / total) * 100).toFixed(2) : '0.00';
+  const topErr = Object.entries(state.wrongTypes).sort((a,b)=>b[1]-a[1])[0];
+  const el = document.getElementById('d-report');
+  el.classList.remove('hidden');
+  el.innerHTML = `<span style="color:var(--green)">╔══════════════════════════════════╗
+║     REPORTE DE SESIÓN PyExcept   ║
+╚══════════════════════════════════╝</span>
+
+<span style="color:var(--blue)">Usuario:</span>    Estudiante Python
+<span style="color:var(--blue)">Nivel:</span>       ${state.level}
+<span style="color:var(--blue)">XP Total:</span>    ${state.xp} puntos
+<span style="color:var(--blue)">Racha:</span>       ${state.streak} respuestas consecutivas
+
+<span style="color:var(--green)">Respuestas correctas:</span>  ${state.correctAnswers}
+<span style="color:var(--red)">Respuestas incorrectas:</span> ${state.wrongAnswers}
+<span style="color:var(--yellow)">Precisión:</span>             ${acc}%
+
+<span style="color:var(--purple)">Niveles completados:</span>  ${state.completedLevels.join(', ') || 'Ninguno'}
+<span style="color:var(--orange)">Error más frecuente:</span>   ${topErr ? topErr[0] : 'N/A'}
+
+<span style="color:var(--text-muted)">f""" Generado por PyExcept Platform — {new Date().toLocaleString()} """</span>`;
+}
+
+// ── Achievements ───────────────────────────────────────────────────────────
+function checkAchievements() {
+  const total = state.correctAnswers + state.wrongAnswers;
+  const acc = total > 0 ? (state.correctAnswers / total) * 100 : 0;
+
+  const rules = [
+    ['first_correct', state.correctAnswers >= 1],
+    ['streak_3', state.streak >= 3],
+    ['streak_5', state.streak >= 5],
+    ['level_1', state.completedLevels.includes(1)],
+    ['level_3', state.completedLevels.includes(3)],
+    ['level_5', state.completedLevels.includes(5)],
+    ['no_errors', state.completedLevels.length > 0 && lessonWrongThisLevel === 0],
+    ['all_done', state.completedLevels.length === LEVELS.length],
+    ['perfectionist', acc >= 90 && total >= 10],
+  ];
+
+  rules.forEach(([id, cond]) => {
+    if (cond && !state.achievements[id]) {
+      state.achievements[id] = true;
+      const def = ACHIEVEMENTS_DEF.find(a => a.id === id);
+      if (def) showXpToast(`${def.emoji} ${def.title}`);
+    }
+  });
+
+  // Level up
+  const newLevel = Math.min(5, Math.floor(state.xp / 150) + 1);
+  if (newLevel > state.level) state.level = newLevel;
+}
+
+// ── Nav & UI updates ──────────────────────────────────────────────────────
+function updateNav() {
+  document.getElementById('nav-xp').textContent = state.xp + ' XP';
+  document.getElementById('nav-streak').textContent = state.streak;
+  document.getElementById('nav-lives').textContent = state.lives;
+}
+
+function updateHomeProgress() {
+  const pct = Math.round((state.completedLevels.length / LEVELS.length) * 100);
+  document.getElementById('home-prog-fill').style.width = pct + '%';
+  document.getElementById('home-prog-pct').textContent = pct + '%';
+  document.getElementById('home-level').textContent = state.level;
+  document.getElementById('home-xp-badge').innerHTML = `⚡ ${state.xp} XP`;
+  document.getElementById('home-streak-badge').innerHTML = `🔥 Racha: ${state.streak}`;
+}
+
+function showXpToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'xp-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 900);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  updateNav();
+  renderRef();
+
+  // Scroll observer
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); obs.unobserve(e.target); }});
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.s-fade').forEach(el => obs.observe(el));
+});
+</script>
+</body>
+</html>
